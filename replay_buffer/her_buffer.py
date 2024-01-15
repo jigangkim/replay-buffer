@@ -1,6 +1,6 @@
 import copy
 import numpy as np
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from .replay_buffer import ReplayBuffer
 
@@ -9,11 +9,11 @@ class HindsightReplayBuffer(object):
     def __init__(
         self,
         max_number_of_transitions: int,
-        goal_env,
+        compute_reward,
+        compute_done: Optional[Callable]=None,
         n_sampled_goal: int=4,
         goal_selection_strategy: str='future',
         online_sampling: bool=True,
-        relabel_done: bool=False,
         mem_option: str='static',
         name: str=''
         ) -> None:
@@ -22,10 +22,8 @@ class HindsightReplayBuffer(object):
         self.capacity = int(max_number_of_transitions)
         self._mem_option = mem_option
         # input args (hindsight)
-        self._compute_reward = goal_env.compute_reward
-        self.relabel_done = relabel_done
-        if self.relabel_done:
-            self._compute_done = goal_env.compute_done
+        self._compute_reward = compute_reward
+        self._compute_done = compute_done
         self.n_sampled_goal = int(n_sampled_goal)
         self.her_ratio = 1 - 1/(self.n_sampled_goal + 1)
         self.goal_selection_strategy = goal_selection_strategy
@@ -53,10 +51,13 @@ class HindsightReplayBuffer(object):
 
     def __setitem__(self, key, value):
         raise TypeError('Insertion forbidden!')
+    
+    def __len__(self):
+        return self.num_transitions
 
     def store(
         self,
-        transition: Dict,
+        transition: Dict
         ) -> None:
         '''
         Store transition.
@@ -77,7 +78,7 @@ class HindsightReplayBuffer(object):
                 self.episode_stats.pop(overwritten_episode_id)
             else:
                 self.episode_stats[overwritten_episode_id] = ((self.index + 1) % self.capacity, e_overwritten)
-        episode_id = transition['episode']
+        episode_id = int(transition['episode'])
         if episode_id in self.episode_stats:
             s, _ = self.episode_stats[episode_id]
             self.episode_stats[episode_id] = (s, self.index)
@@ -106,7 +107,7 @@ class HindsightReplayBuffer(object):
         self,
         batch_size: int,
         n_step: int=1,
-        frame_stack: Optional[int]=None
+        frame_stack: int=1
         ) -> Dict[str,np.ndarray]:
         '''
         Randomly sample batch(es) of transition(s) from buffer.
@@ -181,7 +182,7 @@ class HindsightReplayBuffer(object):
             return ret
         else:
             assert n_step == 1, 'n_step > 1 not suported for offline sampling'
-            assert frame_stack is None, 'frame_stack not supported for offline sampling'
+            assert frame_stack == 1, 'frame_stack not supported for offline sampling'
             return self._replay_buffer.sample(batch_size)
 
     def clear(self) -> None:

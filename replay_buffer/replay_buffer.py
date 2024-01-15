@@ -32,6 +32,9 @@ class ReplayBuffer(object):
 
     def __setitem__(self, key, value):
         raise TypeError('Insertion forbidden!')
+    
+    def __len__(self):
+        return self.num_transitions
 
     def store(
         self,
@@ -89,7 +92,7 @@ class ReplayBuffer(object):
         '''
         assert self.num_transitions > 0
         if self.frame_stack == 1:
-            assert frame_stack is None, 'Cannot change frame_stack if it was set to 1 at initialization!'
+            assert frame_stack is None or frame_stack == 1, 'Cannot change frame_stack if it was set to 1 at initialization!'
         num_stack = self.frame_stack if frame_stack is None else frame_stack
 
         def _get_indices(batch_size, n_step):

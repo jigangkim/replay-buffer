@@ -1,7 +1,7 @@
 import copy
 import math
 import numpy as np
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 from .replay_buffer import ReplayBuffer
 from .her_buffer import HindsightReplayBuffer
@@ -22,7 +22,6 @@ class LazyReplayBufferOld(ReplayBuffer):
         super(LazyReplayBufferOld, self).__init__(max_number_of_transitions, frame_stack, mem_option, name)
         self.episode_len = episode_len
         assert max_number_of_transitions%episode_len == 0, 'buffer capacity must be a multiple of episode length!'
-
     
     def __getitem__(self, index):
         return TypeError('Indexing forbidden!')
@@ -34,7 +33,7 @@ class LazyReplayBufferOld(ReplayBuffer):
         ) -> Dict:
         assert self.num_transitions > 0
         if self.frame_stack == 1:
-            assert frame_stack is None, 'Cannot change frame_stack if it was set to 1 at initialization!'
+            assert frame_stack is None or frame_stack == 1, 'Cannot change frame_stack if it was set to 1 at initialization!'
         num_stack = self.frame_stack if frame_stack is None else frame_stack
 
         if self.num_transitions < self.capacity:
@@ -272,19 +271,19 @@ class LazyHindsightReplayBuffer(HindsightReplayBuffer):
     def __init__(
         self,
         max_number_of_transitions: int,
-        goal_env,
+        compute_reward,
+        compute_done: Optional[Callable]=None,
         n_sampled_goal: int=4,
         goal_selection_strategy: str='future',
-        relabel_done: bool=False,
         episode_len: int=-1, # rough hint for episode length, always supports variable episode lengths
         mem_option: str='static',
         name: str=''
         ) -> None:
-        super(LazyHindsightReplayBuffer, self).__init__(max_number_of_transitions, goal_env,
+        super(LazyHindsightReplayBuffer, self).__init__(max_number_of_transitions, compute_reward,
+                                                                compute_done=compute_done,
                                                                 n_sampled_goal=n_sampled_goal,
                                                                 goal_selection_strategy=goal_selection_strategy,
                                                                 online_sampling=True,
-                                                                relabel_done=relabel_done,
                                                                 mem_option=mem_option,
                                                                 name=name)
         if episode_len > 0:
@@ -312,7 +311,7 @@ class LazyHindsightReplayBuffer(HindsightReplayBuffer):
                 self.aux_inuse[self.aux_id[self.index]] = False
             else:
                 self.episode_stats[overwritten_episode_id] = ((self.index + 1) % self.capacity, e_overwritten)
-        episode_id = transition['episode']
+        episode_id = int(transition['episode'])
         existing_episode = episode_id in self.episode_stats
         if existing_episode:
             last_obs_pointer = self.aux_id[(self.index-1)%self.capacity]
