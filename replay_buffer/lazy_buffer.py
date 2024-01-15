@@ -10,6 +10,14 @@ from .her_buffer import HindsightReplayBuffer
 class LazyReplayBufferOld(ReplayBuffer):
     '''
     Lazy replay buffer that require fixed episode lengths.
+
+    params:
+        :param max_number_of_transitions: Maximum number of transitions to keep
+        :param episode_len: Episode length
+        :param frame_stack: Number of frames to stack
+        :param mem_option: Memory option (static, dynamic)
+        :param name: Name for identification (optional)
+    returns:
     '''
     def __init__(
         self,
@@ -31,6 +39,15 @@ class LazyReplayBufferOld(ReplayBuffer):
         batch_size: int,
         frame_stack: Optional[int]=None
         ) -> Dict:
+        '''
+        Randomly sample batch(es) of transition(s) from buffer.
+
+        params:
+            :param batch_size: Size of batch
+            :param frame_stack: Number of frames to stack
+        returns:
+            :return *: Batch(es) of transition(s) of size batch_size
+        '''
         assert self.num_transitions > 0
         if self.frame_stack == 1:
             assert frame_stack is None or frame_stack == 1, 'Cannot change frame_stack if it was set to 1 at initialization!'
@@ -64,6 +81,9 @@ class LazyReplayBufferOld(ReplayBuffer):
         self, 
         transition
         ) -> None:
+        '''
+        Preallocate memory for buffer.
+        '''
         self.item_keys = list(transition.keys())
         required_keys = [
             'observation',
@@ -120,6 +140,14 @@ class LazyReplayBuffer(ReplayBuffer):
     '''
     Lazy replay buffer that supports variable episode lengths.
     This is achieved by maintaining the obs data as the lazy data and only storing the latest next obs in the aux data.
+
+    params:
+        :param max_number_of_transitions: Maximum number of transitions to keep
+        :param episode_len: Rough hint for episode length
+        :param frame_stack: Number of frames to stack
+        :param mem_option: Memory option (static, dynamic)
+        :param name: Name for identification (optional)
+    returns:
     '''
     def __init__(
         self,
@@ -143,6 +171,13 @@ class LazyReplayBuffer(ReplayBuffer):
         self,
         transition: Dict
         ) -> None:
+        '''
+        Store transition.
+
+        params:
+            :param transition: Transition to store
+        returns:
+        '''
         if self.data is None:
             self._preallocate(transition)
 
@@ -183,6 +218,9 @@ class LazyReplayBuffer(ReplayBuffer):
         self.index = (self.index + 1) % self.capacity
 
     def clear(self) -> None:
+        '''
+        Reset buffer (does NOT free memory).
+        '''
         super(LazyReplayBuffer, self).clear()
         self.aux_id[:] = -1
         self.aux_inuse[:] = False
@@ -191,6 +229,9 @@ class LazyReplayBuffer(ReplayBuffer):
         self, 
         transition
         ) -> None:
+        '''
+        Preallocate memory for buffer.
+        '''
         self.item_keys = list(transition.keys())
         required_keys = [
             'observation',
@@ -267,6 +308,17 @@ class LazyHindsightReplayBuffer(HindsightReplayBuffer):
     '''
     Lazy hindsight replay buffer that supports variable episode lengths.
     This is achieved by maintaining the obs data as the lazy data and only storing the latest next obs in the aux data.
+
+    params:
+        :param max_number_of_transitions: Maximum number of transitions to keep
+        :param compute_reward: Goal-conditioned reward function
+        :param compute_done: Goal-conditioned done function
+        :param n_sampled_goal: Number of virtual transitions to create per real transition
+        :param goal_selection_strategy: Goal selection strategy (final, future, episode)
+        :param episode_len: Rough hint for episode length
+        :param mem_option: Memory option (static, dynamic)
+        :param name: Name for identification (optional)
+    returns:
     '''
     def __init__(
         self,
@@ -299,6 +351,13 @@ class LazyHindsightReplayBuffer(HindsightReplayBuffer):
         self,
         transition: Dict,
         ) -> None:
+        '''
+        Store transition.
+
+        params:
+            :param transition: Transition to store
+        returns:
+        '''
         if self.data is None:
             self._preallocate(transition)
 
@@ -340,6 +399,9 @@ class LazyHindsightReplayBuffer(HindsightReplayBuffer):
         self.index = (self.index + 1) % self.capacity
 
     def clear(self) -> None:
+        '''
+        Reset buffer (does NOT free memory).
+        '''
         super(LazyHindsightReplayBuffer, self).clear()
         self.aux_id[:] = -1
         self.aux_inuse[:] = False
@@ -348,6 +410,9 @@ class LazyHindsightReplayBuffer(HindsightReplayBuffer):
         self,
         transition
         ) -> None:
+        '''
+        Preallocate memory for buffer.
+        '''
         self.item_keys = list(transition.keys())
         required_keys = [
             'observation',

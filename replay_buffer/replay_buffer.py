@@ -6,6 +6,13 @@ from typing import Dict, Optional
 class ReplayBuffer(object):
     '''
     Generic replay buffer.
+
+    params:
+        :param max_number_of_transitions: Maximum number of transitions to keep
+        :param frame_stack: Number of frames to stack
+        :param mem_option: Memory option (static, dynamic)
+        :param name: Name for identification (optional)
+    returns:
     '''
     def __init__(
         self,
@@ -87,6 +94,7 @@ class ReplayBuffer(object):
         params:
             :param batch_size: Size of batch
             :param n_step: Sample transitions n-steps apart
+            :param frame_stack: Number of frames to stack
         returns:
             :return *: Batch(es) of transition(s) of size batch_size
         '''

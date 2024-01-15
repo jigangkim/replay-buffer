@@ -6,6 +6,20 @@ from .replay_buffer import ReplayBuffer
 
 
 class HindsightReplayBuffer(object):
+    '''
+    Hindsight replay buffer for state transitions.
+
+    params:
+        :param max_number_of_transitions: Maximum number of transitions to keep
+        :param compute_reward: Goal-conditioned reward function
+        :param compute_done: Goal-conditioned done function
+        :param n_sampled_goal: Number of virtual transitions to create per real transition
+        :param goal_selection_strategy: Goal selection strategy (final, future, episode)
+        :param online_sampling: Whether to re-label at sample time or at store time
+        :param mem_option: Memory option (static, dynamic)
+        :param name: Name for identification (optional)
+    returns:
+    '''
     def __init__(
         self,
         max_number_of_transitions: int,
@@ -115,6 +129,7 @@ class HindsightReplayBuffer(object):
         params:
             :param batch_size: Size of batch
             :param n_step: Sample transitions n-steps apart
+            :param frame_stack: Number of frames to stack
         returns:
             :return *: Batch of transition(s) of size batch_size
         '''
@@ -335,7 +350,7 @@ class HindsightReplayBuffer(object):
             [self.info_buffer[idx] for idx in transition_indices]
         ).reshape(her_data[reward_idx].shape)
         # update dones
-        if self.relabel_done:
+        if self._compute_done is not None:
             her_data[done_idx] = self._compute_done(
                 her_data[next_achieved_goal_idx],
                 her_data[desired_goal_idx], # new desired goal
